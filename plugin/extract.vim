@@ -90,9 +90,8 @@ func! extract#regPut(cmd, reg) "{{{
     " save cmd used
     let s:currentCmd = a:cmd
 
-
-    " check if we need to put something new
     call s:addToList({'regcontents': getreg(a:reg, 1, 1), 'regtype' : getregtype(a:reg)})
+
     call s:saveReg(s:all[s:extractAllDex])
 
     call setreg(g:extract_defaultRegister, s:all[s:extractAllDex], s:allType[s:extractAllDex])
@@ -241,20 +240,19 @@ func! extract#UnComplete() "{{{
         return
     endif
 
-    " if we are registers use them, if we are the list, use index
-    if s:isRegisterCompleteType
-        call s:saveReg(k)
-        call setreg(g:extract_defaultRegister, getreg(k,1,1), getregtype(k))
-    else
-        call s:saveReg(s:all[str2nr(k)])
-        call setreg(g:extract_defaultRegister, s:all[str2nr(k)], s:allType[str2nr(k)])
-    endif
-
     " undo the complete...
     norm! u
 
-    " and put the results!
-    call extract#put()
+    " if we are registers use them, if we are the list, use index
+    if s:isRegisterCompleteType
+        call extract#regPut(s:currentCmd, k)
+    else
+        call s:saveReg(s:all[str2nr(k)])
+        call setreg(g:extract_defaultRegister, s:all[str2nr(k)], s:allType[str2nr(k)])
+        call extract#put()
+    endif
+
+
 endfun
 autocmd CompleteDone * :call extract#UnComplete() "}}}
 
