@@ -1,6 +1,6 @@
 # Vim Extract
 
-<i>Extract</i>
+<i>Extract; Draw forth what really matters</i>
 
 ## It's like a kill-ring for your yank, and it supports completion for insert mode.
 
