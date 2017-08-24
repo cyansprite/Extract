@@ -52,7 +52,7 @@ Use `<m-v>` to show a popup menu you for your registers.
 
 It's cool, just map these
 
-```
+```vim
     " mappings for putting
     nmap p <Plug>(extract-put)
     nmap P <Plug>(extract-Put)
