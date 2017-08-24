@@ -34,9 +34,6 @@ endif
 
 " Yanked, extract it out {{{
 autocmd TextYankPost * call extract#YankHappened(v:event)
-autocmd VimEnter * call extract#initPut('p', g:extract_defaultRegister)
-autocmd TextYankPost * call extract#YankHappened(v:event)
-autocmd VimEnter * call extract#initPut('p', g:extract_defaultRegister)
 
 func! extract#YankHappened(event)
     if count(g:extract_ignoreRegisters,  split(a:event['regname'])) > 0 
@@ -77,18 +74,8 @@ endfunc
 
 " end yank and add }}}
 
-func! extract#initPut(cmd, reg) "{{{
-    " save cmd used
-    let s:currentCmd = a:cmd
-
-    call s:saveReg()
-
-    " check if we need to put something new
-    call s:addToList({'regcontents': getreg(a:reg, 1, 1), 'regtype' : getregtype(a:reg)})
-endfun "}}}
-
-func! s:saveReg() "{{{
-    " save reg
+func! s:saveReg(reg) "{{{
+    let s:lastUsedReg = a:reg
     let s:currentRegType = getregtype(g:extract_defaultRegister)
     let s:currentReg     = getreg(g:extract_defaultRegister, 1, 1)
     let s:lastType       = getregtype(g:extract_defaultRegister)
@@ -99,7 +86,15 @@ func! s:saveReg() "{{{
     endif
 endfun "}}}
 
-func! extract#regPut() "{{{
+func! extract#regPut(cmd, reg) "{{{
+    " save cmd used
+    let s:currentCmd = a:cmd
+
+
+    " check if we need to put something new
+    call s:addToList({'regcontents': getreg(a:reg, 1, 1), 'regtype' : getregtype(a:reg)})
+    call s:saveReg(s:all[s:extractAllDex])
+
     call setreg(g:extract_defaultRegister, s:all[s:extractAllDex], s:allType[s:extractAllDex])
 
     call extract#put()
@@ -121,7 +116,6 @@ func! extract#cycle(inc) "{{{
         return
     endif
 
-    call s:saveReg()
 
     " Update index, loop if neg or count
     let s:extractAllDex = s:extractAllDex + a:inc
@@ -132,6 +126,7 @@ func! extract#cycle(inc) "{{{
         let s:extractAllDex = 0
     endif
 
+    call s:saveReg(s:all[s:extractAllDex])
     call setreg(g:extract_defaultRegister, s:all[s:extractAllDex], s:allType[s:extractAllDex])
 
     silent! undo
@@ -156,7 +151,8 @@ func! extract#cyclePasteType() "{{{
     else
         let s:lastType = 'v'
     endif
-    call setreg(g:extract_defaultRegister, s:currentReg, s:lastType)
+
+    call setreg(g:extract_defaultRegister, s:lastUsedReg, s:lastType)
 
     silent! undo
 
@@ -238,7 +234,6 @@ func! extract#UnComplete() "{{{
     " if we did do the complete let us know not to do this again
     " init put with cmd and reg name
     let k = v:completed_item['kind']
-    call s:saveReg()
     let s:initcomplete = 0
 
     " if we are characther wise there and we only have 1 line, just do as is.
@@ -248,8 +243,10 @@ func! extract#UnComplete() "{{{
 
     " if we are registers use them, if we are the list, use index
     if s:isRegisterCompleteType
+        call s:saveReg(k)
         call setreg(g:extract_defaultRegister, getreg(k,1,1), getregtype(k))
     else
+        call s:saveReg(s:all[str2nr(k)])
         call setreg(g:extract_defaultRegister, s:all[str2nr(k)], s:allType[str2nr(k)])
     endif
 
@@ -263,7 +260,7 @@ autocmd CompleteDone * :call extract#UnComplete() "}}}
 
 " Commands and mapping {{{
 " helpers
-com! -nargs=1 ExtractPut call extract#initPut(<q-args>[0], v:register) |  call extract#regPut() | let s:doDelete = 0
+com! -nargs=1 ExtractPut call extract#regPut(<q-args>[0], v:register) | let s:doDelete = 0
 com! -nargs=1 ExtractSycle call extract#cycle(<q-args>)
 com! -nargs=0 ExtractCycle call extract#cyclePasteType()
 com! -range -nargs=1 ExtractPutVisual let s:changenr = changenr() | let s:currentCmd = <q-args>[0] | let s:currentRange = [<line1>, <line2>] | let s:doDelete = visualmode() ==# 'V'
