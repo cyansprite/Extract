@@ -22,16 +22,12 @@ if !has_key(g:,"extract_defaultRegister")
     let g:extract_defaultRegister = '0'
 endif
 
-if !has_key(g:,"extract_ignoreregisters")
+if !has_key(g:,"extract_ignoreRegisters")
     let g:extract_ignoreRegisters = ['a', '.']
 endif
 
 if !has_key(g:,"extract_useDefaultMappings")
     let g:extract_useDefaultMappings = 1
-endif
-
-if !has_key(g:,"extract_useOnlyCharWiseOnlyComplete")
-    let g:extract_useOnlyCharWiseOnlyComplete = 0
 endif
 
 " end vars}}}
@@ -193,7 +189,7 @@ func! extract#complete(cmd, isRegisterComplete) " {{{
             endif
             let kind = strpart(s, 1, 2)
             let type = getregtype(kind)
-            if (g:extract_useOnlyCharWiseOnlyComplete && type !=# 'v' )|| count(g:extract_ignoreRegisters,  split(kind)) > 0
+            if count(g:extract_ignoreRegisters,  split(kind)) > 0
                 continue
             endif
             let word = getreg(kind, 1, 1)
@@ -219,9 +215,6 @@ func! extract#complete(cmd, isRegisterComplete) " {{{
         " loop and add items with index
         for x in s:all
             let l:ind = l:ind + 1
-            if g:extract_useOnlyCharWiseOnlyComplete && s:allType[l:ind] ==# 'V'
-                continue
-            endif
             call add(words, {'empty': 1, 'kind': l:ind, 'menu': '['.s:allType[l:ind]. ' '. len(s:all[l:ind]) .']', 'word': strpart(join(s:all[l:ind]),0, winwidth('.')/2)})
         endfor
         let words = reverse(words)
