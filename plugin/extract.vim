@@ -9,6 +9,7 @@ func! extract#clear()
     let s:currentReg = ""
     let s:currentRegType = ""
     let s:initcomplete = 0
+    let s:visual = 0
 endfun
 call extract#clear()
 " end local vars}}}
@@ -47,13 +48,17 @@ func! extract#echo()
     echom string(s:all)
 endfun
 
+func! extract#giveList()
+    return s:all
+endfun
+
 func! extract#echoType()
     echom string(s:allType)
 endfun
 
 func! s:addToList(event)
     " Add to register IF it doesn't already exist
-    if count(s:all, a:event['regcontents']) == len(a:event['regcontents'])
+    if count(s:all, (a:event['regcontents'])) > 0
         let l:index = index(s:all, a:event['regcontents'])
         call remove(s:all, l:index)
         call remove(s:allType, l:index)
@@ -68,7 +73,9 @@ func! s:addToList(event)
         call remove(s:allType, 0)
     else
         let s:allCount = s:allCount + 1
-        let s:extractAllDex = s:allCount - 1
+        if !s:visual
+            let s:extractAllDex = s:allCount - 1
+        endif
     endif
 endfunc
 
@@ -79,7 +86,7 @@ func! s:saveReg(reg) "{{{
     let s:currentRegType = getregtype(g:extract_defaultRegister)
     let s:currentReg     = getreg(g:extract_defaultRegister, 1, 1)
     let s:lastType       = getregtype(g:extract_defaultRegister)
-    if s:currentRegType != 'v'
+    if s:currentRegType !=? 'v'
         let s:specialType = s:currentRegType
     else
         let s:specialType = ''
@@ -89,7 +96,6 @@ endfun "}}}
 func! extract#regPut(cmd, reg) "{{{
     " save cmd used
     let s:currentCmd = a:cmd
-
     call s:addToList({'regcontents': getreg(a:reg, 1, 1), 'regtype' : getregtype(a:reg)})
 
     call s:saveReg(s:all[s:extractAllDex])
@@ -101,7 +107,7 @@ endfun "}}}
 
 func! extract#put() "{{{
     " put from our reg
-    exe "norm! \"". g:extract_defaultRegister . s:currentCmd
+    exe "norm! ". (s:visual ? "gv" : "") ."\"". g:extract_defaultRegister . s:currentCmd
 
     " restore reg
     call setreg(g:extract_defaultRegister, s:currentReg, s:currentRegType)
@@ -114,7 +120,6 @@ func! extract#cycle(inc) "{{{
     if s:allCount < 2 || s:changenr != changenr()
         return
     endif
-
 
     " Update index, loop if neg or count
     let s:extractAllDex = s:extractAllDex + a:inc
@@ -129,11 +134,6 @@ func! extract#cycle(inc) "{{{
     call setreg(g:extract_defaultRegister, s:all[s:extractAllDex], s:allType[s:extractAllDex])
 
     silent! undo
-
-    if s:doDelete
-        exe s:currentRange[0]. ',' . s:currentRange[1] . 'delete'
-        norm! k
-    endif
 
     call extract#put()
 endfunc "}}}
@@ -152,7 +152,7 @@ func! extract#cyclePasteType() "{{{
     endif
 
     call setreg(g:extract_defaultRegister, s:lastUsedReg, s:lastType)
-
+ 
     silent! undo
 
     call extract#put()
@@ -258,21 +258,17 @@ autocmd CompleteDone * :call extract#UnComplete() "}}}
 
 " Commands and mapping {{{
 " helpers
-com! -nargs=1 ExtractPut call extract#regPut(<q-args>[0], v:register) | let s:doDelete = 0
+com! -nargs=1 ExtractPut let s:visual = 0 | call extract#regPut(<q-args>[0], v:register)
+com! -range -nargs=1 VisExtractPut let s:visual = 1 | call extract#regPut(<q-args>[0], v:register)
 com! -nargs=1 ExtractSycle call extract#cycle(<q-args>)
 com! -nargs=0 ExtractCycle call extract#cyclePasteType()
-com! -range -nargs=1 ExtractPutVisual let s:changenr = changenr() | let s:currentCmd = <q-args>[0] | let s:currentRange = [<line1>, <line2>] | let s:doDelete = visualmode() ==# 'V'
 com! -nargs=0 ExtractClear call extract#clear()
 
-" norm put
 nnoremap <expr><Plug>(extract-put) ':ExtractPut p<cr>'
 nnoremap <expr><Plug>(extract-Put) ':ExtractPut P<cr>'
+vnoremap <expr><Plug>(extract-put) ':VisExtractPut p<cr>'
+vnoremap <expr><Plug>(extract-Put) ':VisExtractPut P<cr>'
 
-" visual put
-vnoremap <Plug>(extract-put) p:extractPutVisual p<cr>
-vnoremap <Plug>(extract-Put) P:extractPutVisual P<cr>
-
-" norm and visual cycle
 noremap <expr><Plug>(extract-sycle) ':ExtractSycle 1<cr>'
 noremap <expr><Plug>(extract-Sycle) ':ExtractSycle -1<cr>'
 noremap <expr><Plug>(extract-cycle) ':ExtractCycle<cr>'
