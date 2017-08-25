@@ -3,7 +3,7 @@
 <i>Extract; Draw forth what really matters</i>
 
 ## Extract puts and yanks to a list with normal, visual swapping, and insert list/register completion.
-
+![Extract Demo](ExtractDemo.gif)
 ### Things to know
 
 - You can still use `"<register>p/P`
