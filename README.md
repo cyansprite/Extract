@@ -1,4 +1,4 @@
-# Vim Extract
+# Neovim Extract
 
 <i>Extract; Draw forth what really matters</i>
 
