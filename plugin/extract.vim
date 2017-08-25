@@ -37,7 +37,7 @@ endif
 autocmd TextYankPost * call extract#YankHappened(v:event)
 
 func! extract#YankHappened(event)
-    if count(g:extract_ignoreRegisters,  split(a:event['regname'])) > 0 
+    if count(g:extract_ignoreRegisters,  split(a:event['regname'])) > 0
         return
     endif
 
@@ -113,8 +113,10 @@ func! extract#put() "{{{
     " restore reg
     call setreg(g:extract_defaultRegister, s:currentReg, s:currentRegType)
 
+
     " save new change
     let s:changenr = changenr()
+    let s:visual = 0
 endfunc "}}}
 
 func! extract#cycle(inc) "{{{
@@ -153,7 +155,7 @@ func! extract#cyclePasteType() "{{{
     endif
 
     call setreg(g:extract_defaultRegister, s:lastUsedReg, s:lastType)
- 
+
     silent! undo
 
     call extract#put()
@@ -205,7 +207,7 @@ func! extract#complete(cmd, isRegisterComplete) " {{{
             " finally add to words for completion
             call add(words,{'empty': 1, 'menu': '['. getregtype(kind) . ' '. len(finalwords) .' ]', 'kind' : kind, 'word' : strpart((join(finalwords, '')), 0, winwidth('.') / 2 )})
         endfor
-    " if we are list and we aren't empty
+        " if we are list and we aren't empty
     elseif s:allCount > 0
         let l:ind = -1
         " loop and add items with index
@@ -254,8 +256,8 @@ func! extract#UnComplete() "{{{
         call extract#put()
     endif
 
-
 endfun
+
 autocmd CompleteDone * :call extract#UnComplete() "}}}
 
 " Commands and mapping {{{
