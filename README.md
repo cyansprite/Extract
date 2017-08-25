@@ -2,7 +2,7 @@
 
 <i>Extract; Draw forth what really matters</i>
 
-## It's like a kill-ring for your yank, and it supports completion for insert mode.
+## Extract puts and yanks to a list with normal, visual swapping, and insert list/register completion.
 
 ### Things to know
 
