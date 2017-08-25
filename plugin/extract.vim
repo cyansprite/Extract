@@ -96,6 +96,7 @@ endfun "}}}
 func! extract#regPut(cmd, reg) "{{{
     " save cmd used
     let s:currentCmd = a:cmd
+
     call s:addToList({'regcontents': getreg(a:reg, 1, 1), 'regtype' : getregtype(a:reg)})
 
     call s:saveReg(s:all[s:extractAllDex])
@@ -237,11 +238,12 @@ func! extract#UnComplete() "{{{
 
     " if we are characther wise there and we only have 1 line, just do as is.
     if strpart(v:completed_item['menu'],1,1) ==# 'v' && strpart(v:completed_item['menu'],3,1) ==# '1'
+        call s:addToList({'regcontents': getreg(l:k, 1, 1), 'regtype' : getregtype(l:k)})
         return
     endif
 
     " undo the complete...
-    norm! u
+    silent! undo
 
     " if we are registers use them, if we are the list, use index
     if s:isRegisterCompleteType
