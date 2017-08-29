@@ -34,7 +34,7 @@ endif
 " end vars}}}
 
 " Yanked, extract it out {{{
-autocmd TextYankPost * call extract#YankHappened(v:event)
+autocmd TextYankPost * call extract#YankHappened(deepcopy(v:event))
 
 func! extract#YankHappened(event)
     if count(g:extract_ignoreRegisters,  split(a:event['regname'])) > 0
