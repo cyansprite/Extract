@@ -1,0 +1,94 @@
+extract.txt
+
+================================================================================
+CONTENTS                                                        *extract-contents*
+
+1. Neovim Extract.........................................|extract-neovim_extract|
+    1.1. Extract puts and yanks to a list with normal, visual swapping, and insert list/register completion..|extract-extract_puts_and_yanks_to_a_list_with_normal,_visual_swapping,_and_insert_list/register_completion.|
+        1.1.1. Things to know.............................|extract-things_to_know|
+        1.1.2. Usage...............................................|extract-usage|
+            1.1.2.1. Normal and Visual.................|extract-normal_and_visual|
+            1.1.2.2. Insert Mode.............................|extract-insert_mode|
+        1.1.3. Global options.............................|extract-global_options|
+        1.1.4. I Don't Like your mappings....|extract-i_don't_like_your_mappings...|
+                1.1.4.1. Todo.......................................|extract-todo|
+
+================================================================================
+NEOVIM EXTRACT                                            *extract-neovim_extract*
+
+Extract; Draw forth what really matters
+
+--------------------------------------------------------------------------------
+EXTRACT PUTS AND YANKS TO A LIST WITH NORMAL, VISUAL SWAPPING, AND INSERT LIST/REGISTER COMPLETION. *extract-extract_puts_and_yanks_to_a_list_with_normal,_visual_swapping,_and_insert_list/register_completion.*
+
+
+
+THINGS TO KNOW                                            *extract-things_to_know*
+
+*   You can still use `"<register>p/P`
+    *   Putting will add to the list if it's a new item.
+*   Yanking will add to the list if it's a new item.
+*   If you put/yank a duplicate, with a different *-wise insertion,
+    it will choose the newest *-wise.
+*   If you put/yank a duplicate that is the same *-wise, it will go
+    to the top of the list, but not add a new occurance.
+
+USAGE                                                              *extract-usage*
+
+NORMAL AND VISUAL                                      *extract-normal_and_visual*
+
+Use `p`/`P` like normal, once you use it with different registers or you yank
+text, it will add those to the list.  Then, you can use use `s` to go forward
+in the list, and `S` to go backwards. If you want to change whether it pastes
+linewise/blockwise/characther wise, hit c-s to cycle through them.
+
+INSERT MODE                                                  *extract-insert_mode*
+
+Use `c-v` to paste from the ring, this will make a popup for the ring with the most recent at the top,
+descending to the least current.
+
+Once selected you can continue typing like usual, or something I use a lot:
+whenever I yank something, it's usually linewise (like `yy`), which means
+that it puts mean on a new line after putting the text, if you then type
+`<c-s>` to complete it, it will then switch the *-wise and put you in
+front of the completed text.
+
+Use `<m-s\S>` to cycle inside the ring while inside of insert mode.
+
+Use `<m-v>` to show a popup menu you for your registers.
+
+GLOBAL OPTIONS                                            *extract-global_options*
+
+| Flag                        | Default                           | Description                                                                                |
+| -------------------         | --------------------------------- | ------------------------------------------------------                                     |
+| `g:extract_maxCount`        | 5                                 | How many yanks do you want to save in the list?                                            |
+| `g:extract_defaultRegister` | '0'                               | Registered used to perform opeartions, it is set back to whatever it was previously after. |
+| `g:ignoreRegisters`         | ['a', '.']                        | What registers to ignore                                                                   |
+| `g:useDefaultMappings`      | 1                                 | Use the default mappings                                                                   |
+
+I DON'T LIKE YOUR MAPPINGS...              *extract-i_don't_like_your_mappings...*
+
+It's cool, just map these
+>
+        " mappings for putting
+        nmap p <Plug>(extract-put)
+        nmap P <Plug>(extract-Put)
+        " mappings for cycling
+        map s <Plug>(extract-sycle)
+        map S <Plug>(extract-Sycle)
+        map <c-s> <Plug>(extract-cycle)
+        " mappings for visual
+        vmap p <Plug>(extract-put)
+        vmap P <Plug>(extract-Put)
+        " mappings for insert
+        imap <m-v> <Plug>(extract-completeReg)
+        imap <c-v> <Plug>(extract-completeList)
+        imap <c-s> <Plug>(extract-cycle)
+        imap <m-s> <Plug>(extract-sycle)
+        imap <m-S> <Plug>(extract-Sycle)
+<
+
+TODO                                                                *extract-todo*
+
+*   Add some gifs...
+*   Add vim.help
