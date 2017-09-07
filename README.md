@@ -76,7 +76,5 @@ It's cool, just map these
 
 ##### Todo
 
-- Add some gifs...
-- Add vim.help
 - Add replace (put and delete at the same time for normal and visual mode)
 - Register completion by using the register name.
