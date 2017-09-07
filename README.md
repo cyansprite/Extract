@@ -78,3 +78,4 @@ It's cool, just map these
 
 - Add replace (put and delete at the same time for normal and visual mode)
 - Register completion by using the register name.
+- Setup timer to pull from +/* register on change.
