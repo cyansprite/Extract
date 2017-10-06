@@ -2,8 +2,12 @@ if exists("g:extract_loaded")
   finish
 endif
 let g:extract_loaded = 1
-let timer = timer_start(1000, 'extract#checkClip', {'repeat': -1})
 
+if !has_key(g:,"extract_clipCheck")
+    let g:extract_clipCheck = &updatetime
+endif
+
+let timer = timer_start(g:extract_clipCheck, 'extract#checkClip', {'repeat': -1})
 
 " Script vars {{{
 func! extract#clear()
@@ -17,6 +21,7 @@ func! extract#clear()
     let s:currentRegType = ""
     let s:initcomplete = 0
     let s:visual = 0
+    let s:timercalled = 0
 endfun
 call extract#clear()
 " end local vars}}}
@@ -36,6 +41,10 @@ endif
 
 if !has_key(g:,"extract_useDefaultMappings")
     let g:extract_useDefaultMappings = 1
+endif
+
+if !has_key(g:,"extract_ignoreJustSpaces")
+    let g:extract_ignoreJustSpaces = 1
 endif
 
 " end vars}}}
@@ -67,13 +76,17 @@ func! extract#echoType()
 endfun
 
 func! s:addToList(event)
-    " If it's just whitespace, ignore it
-    if match(a:event['regcontents'], "\S") == -1
+    if g:extract_ignoreJustSpaces && match(a:event['regcontents'], "\\S") == -1
         return
     endif
 
     " Add to register IF it doesn't already exist
     if count(s:all, (a:event['regcontents'])) > 0
+        " If it does exist ignore it if this is a timer call
+        if s:timercalled
+            let s:timercalled = 0
+            return
+        endif
         let l:index = index(s:all, a:event['regcontents'])
         call remove(s:all, l:index)
         call remove(s:allType, l:index)
@@ -123,11 +136,16 @@ endfun "}}}
 
 func! extract#put() "{{{
     " put from our reg
-    exe "norm! ". (s:visual ? "gv" : "") ."\"". g:extract_defaultRegister . s:currentCmd
+    try
+        exe "norm! ". (s:visual ? "gv" : "") ."\"". g:extract_defaultRegister . s:currentCmd
+    catch E353
+        echohl ErrorMsg
+        echom "reg empty"
+        echohl None
+    endtry
 
     " restore reg
     call setreg(g:extract_defaultRegister, s:currentReg, s:currentRegType)
-
 
     " save new change
     let s:changenr = changenr()
@@ -276,9 +294,44 @@ endfun
 autocmd CompleteDone * :call extract#UnComplete() "}}}
 
 func! extract#checkClip(timer) " {{{
+    let s:timercalled = 1
     call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')})
     call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')})
 endfunc
+"}}}
+
+func! s:replace(type, ...) "{{{
+    if g:extract_ignoreJustSpaces && match(a:event['regcontents'], "\\S") == -1
+        echohl ErrorMsg
+        echom "reg empty"
+        echohl None
+        return ''
+    endif
+
+    let sel_save = &selection
+    let &selection = "inclusive"
+    let reg_save = @@
+    let savepos = getcurpos()
+
+    if a:0  " Invoked from Visual mode, use `< `>
+        silent normal! `<
+        silent normal! v
+        silent normal! `>
+    else    " Invoked from Normal mode, use `[ `]
+        silent normal! `[
+        silent normal! v
+        silent normal! `]
+    endif
+
+    call s:saveReg(g:extract_op_func_register)
+    silent normal! x
+
+    call setreg(g:extract_op_func_register, s:currentReg, s:currentRegType)
+    call extract#regPut('p', g:extract_op_func_register)
+
+    let &selection = sel_save
+    let @@ = reg_save
+endfunction
 "}}}
 
 " Commands and mapping {{{
@@ -305,6 +358,9 @@ inoremap <Plug>(extract-sycle) <esc>:ExtractSycle 1<cr>a
 inoremap <Plug>(extract-Sycle) <esc>:ExtractSycle -1<cr>a
 inoremap <Plug>(extract-cycle) <esc>:ExtractCycle<cr>a
 
+nnoremap <Plug>(extract-replace-normal) :let g:extract_op_func_register=v:register \| set opfunc=<SID>replace<cr>g@
+vnoremap <Plug>(extract-replace-visual) :<c-u> let g:extract_op_func_register=v:register \| call <SID>replace(visualmode(), 1)<cr>
+
 " Default mappings {{{
 if g:extract_useDefaultMappings
     " mappings for putting
@@ -312,8 +368,8 @@ if g:extract_useDefaultMappings
     nmap P <Plug>(extract-Put)
 
     " mappings for cycling
-    map s <Plug>(extract-sycle)
-    map S <Plug>(extract-Sycle)
+    map <m-s> <Plug>(extract-sycle)
+    map <m-S> <Plug>(extract-Sycle)
     map <c-s> <Plug>(extract-cycle)
 
     " mappings for visual
@@ -327,6 +383,9 @@ if g:extract_useDefaultMappings
     imap <m-s> <Plug>(extract-sycle)
     imap <m-S> <Plug>(extract-Sycle)
 
+    " mappings for replace
+    nmap <silent> s <Plug>(extract-replace-normal)
+    vmap <silent> s <Plug>(extract-replace-visual)
 endif "}}}
 
 "end Commands and Mapping }}}
