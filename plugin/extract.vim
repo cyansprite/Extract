@@ -1,3 +1,10 @@
+if exists("g:extract_loaded")
+  finish
+endif
+let g:extract_loaded = 1
+let timer = timer_start(1000, 'extract#checkClip', {'repeat': -1})
+
+
 " Script vars {{{
 func! extract#clear()
     let s:all = []
@@ -60,6 +67,11 @@ func! extract#echoType()
 endfun
 
 func! s:addToList(event)
+    " If it's just whitespace, ignore it
+    if match(a:event['regcontents'], "\S") == -1
+        return
+    endif
+
     " Add to register IF it doesn't already exist
     if count(s:all, (a:event['regcontents'])) > 0
         let l:index = index(s:all, a:event['regcontents'])
@@ -262,6 +274,12 @@ func! extract#UnComplete() "{{{
 endfun
 
 autocmd CompleteDone * :call extract#UnComplete() "}}}
+
+func! extract#checkClip(timer) " {{{
+    call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')})
+    call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')})
+endfunc
+"}}}
 
 " Commands and mapping {{{
 " helpers
