@@ -297,6 +297,7 @@ func! extract#checkClip(timer) " {{{
     let s:timercalled = 1
     call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')})
     call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')})
+    call s:addToList({'regcontents': getreg('0', 1, 1), 'regtype' : getregtype('0')})
 endfunc
 "}}}
 
