@@ -295,8 +295,12 @@ autocmd CompleteDone * :call extract#UnComplete() "}}}
 
 func! extract#checkClip(timer) " {{{
     let s:timercalled = 1
-    call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')})
-    call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')})
+    try
+        call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')})
+        call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')})
+    catch 5677
+        echom 'weird clip error, dw bout it, E5677'
+    endtry
     call s:addToList({'regcontents': getreg('0', 1, 1), 'regtype' : getregtype('0')})
 endfunc
 "}}}
