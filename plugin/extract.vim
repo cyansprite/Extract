@@ -389,8 +389,8 @@ if g:extract_useDefaultMappings
     imap <m-S> <Plug>(extract-Sycle)
 
     " mappings for replace
-    nmap <silent> s <Plug>(extract-replace-normal)
-    vmap <silent> s <Plug>(extract-replace-visual)
+    nmap <silent> S <Plug>(extract-replace-normal)
+    vmap <silent> S <Plug>(extract-replace-visual)
 endif "}}}
 
 "end Commands and Mapping }}}
