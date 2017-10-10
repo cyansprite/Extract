@@ -306,7 +306,8 @@ endfunc
 "}}}
 
 func! s:replace(type, ...) "{{{
-    if g:extract_ignoreJustSpaces && match(getreg(s:currentRegType, 1, 1), "\\S") == -1
+    if g:extract_ignoreJustSpaces &&
+     \ match(getreg(g:extract_op_func_register, 1, 1), "\\S") == -1
         echohl ErrorMsg
         echom "reg empty"
         echohl None
