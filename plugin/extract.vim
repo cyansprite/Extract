@@ -1,13 +1,13 @@
 if exists("g:extract_loaded")
   finish
 endif
-let g:extract_loaded = 1
+" let g:extract_loaded = 1
 
 if !has_key(g:,"extract_clipCheck")
     let g:extract_clipCheck = &updatetime * 2
 endif
 
-let timer = timer_start(g:extract_clipCheck, 'extract#checkClip', {'repeat': -1})
+" let timer = timer_start(g:extract_clipCheck, 'extract#checkClip', {'repeat': -1})
 
 " Script vars {{{
 func! extract#clear()
@@ -22,6 +22,7 @@ func! extract#clear()
     let s:initcomplete = 0
     let s:visual = 0
     let s:timercalled = 0
+    let s:pinned = []
 endfun
 call extract#clear()
 " end local vars}}}
@@ -64,7 +65,44 @@ func! extract#YankHappened(event)
 endfunc
 
 func! extract#echo()
-    echom string(s:all)
+    let l:ind = len(s:all) - 1
+    let words = []
+    echohl Title
+    echom "Index        Type        Lines       Register Contents"
+    echom "======================================================"
+    echohl NONE
+    echom ''
+    for x in reverse(s:all)
+        echohl Number
+        echon l:ind . '            ' . repeat(' ', (len(s:all) / 10 - l:ind / 10))
+        echohl Type
+        echon s:allType[l:ind] . '           '
+        echohl StorageClass
+        echon len(s:all[l:ind]) .'           '
+        echohl String
+        echon strpart(join(s:all[l:ind]), 0, winwidth('.') / 3)
+        echohl NONE
+        echom ''
+        let l:ind = l:ind - 1
+    endfor
+    echom ""
+    echom ""
+    echohl Question
+    let answer = input("Index To Pin (ctrl-c cancels) >>> ")
+    echohl None
+
+    let l:answer = str2nr(l:answer)
+
+    if l:answer > len(s:all) - 1 || l:answer < 0
+        echohl ErrorMsg
+        echom "You need to make it in range of the list!"
+        echohl NONE
+        return
+    else
+        let s:pinned = s:all[l:answer]
+        call remove(s:all, l:answer)
+        echom string(s:pinned)
+    endif
 endfun
 
 func! extract#giveList()
@@ -82,11 +120,6 @@ func! s:addToList(event)
 
     " Add to register IF it doesn't already exist
     if count(s:all, (a:event['regcontents'])) > 0
-        " If it does exist ignore it if this is a timer call
-        if s:timercalled
-            let s:timercalled = 0
-            return
-        endif
         let l:index = index(s:all, a:event['regcontents'])
         call remove(s:all, l:index)
         call remove(s:allType, l:index)
@@ -105,6 +138,10 @@ func! s:addToList(event)
             let s:extractAllDex = s:allCount - 1
         endif
     endif
+endfunc
+
+func! ExtractPin(num)
+
 endfunc
 
 " end yank and add }}}
@@ -295,13 +332,14 @@ autocmd CompleteDone * :call extract#UnComplete() "}}}
 
 func! extract#checkClip(timer) " {{{
     let s:timercalled = 1
+    call s:addToList({'regcontents': getreg('0', 1, 1), 'regtype' : getregtype('0')})
+
     try
         call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')})
         call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')})
     catch 5677
         echom 'weird clip error, dw bout it, E5677'
     endtry
-    call s:addToList({'regcontents': getreg('0', 1, 1), 'regtype' : getregtype('0')})
 endfunc
 "}}}
 
