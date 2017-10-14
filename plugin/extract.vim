@@ -1,13 +1,16 @@
+" Setup {{{
 if exists("g:extract_loaded")
   finish
 endif
-" let g:extract_loaded = 1
+let g:extract_loaded = 1
 
 if !has_key(g:,"extract_clipCheck")
     let g:extract_clipCheck = &updatetime * 2
 endif
 
-" let timer = timer_start(g:extract_clipCheck, 'extract#checkClip', {'repeat': -1})
+let timer = timer_start(g:extract_clipCheck, 'extract#checkClip', {'repeat': -1})
+
+" }}}
 
 " Script vars {{{
 func! extract#clear()
@@ -21,9 +24,9 @@ func! extract#clear()
     let s:currentRegType = ""
     let s:initcomplete = 0
     let s:visual = 0
-    let s:timercalled = 0
     let s:pinned = []
 endfun
+
 call extract#clear()
 " end local vars}}}
 
@@ -61,24 +64,74 @@ func! extract#YankHappened(event)
         return
     endif
 
-    call s:addToList(a:event)
+    call s:addToList(a:event, 0)
+endfunc
+
+func! s:addToList(event, ignore)
+    if g:extract_ignoreJustSpaces && match(a:event['regcontents'], "\\S") == -1
+        return
+    endif
+
+    " remove if already exist unless ignored ( i.e. timer or something so rtn)
+    if count(s:all, (a:event['regcontents'])) > 0
+        if a:ignore == 1
+            return
+        endif
+        let l:index = index(s:all, a:event['regcontents'])
+        call remove(s:all, l:index)
+        call remove(s:allType, l:index)
+        let s:allCount = s:allCount - 1
+    endif
+
+    let s:all = add(s:all, (a:event['regcontents']))
+    let s:allType = add(s:allType, (a:event['regtype']))
+
+    if !empty(s:pinned)
+        if a:ignore != 2 && count(s:pinned, (a:event['regcontents'])) == 0
+            let s:all = add(s:all, remove(s:all, len(s:all) - 2))
+            let s:allType = add(s:allType, remove(s:allType, len(s:allType) - 2))
+        endif
+    endif
+
+    if s:allCount > (g:extract_maxCount - 1)
+        call remove(s:all, 0)
+        call remove(s:allType, 0)
+    else
+        let s:allCount = s:allCount + 1
+        if !s:visual
+            let s:extractAllDex = s:allCount - 1
+        endif
+    endif
+endfunc
+
+" end yank and add }}}
+
+" Pin {{{
+func! extract#pin()
+    call extract#echo()
+    echohl NONE
+endfunc
+
+func! extract#unpin()
+    let s:pinned = []
 endfunc
 
 func! extract#echo()
     let l:ind = len(s:all) - 1
     let words = []
     echohl Title
-    echom "Index        Type        Lines       Register Contents"
-    echom "======================================================"
+    echom "Index        Type        Lines       |Register Contents"
+    echom repeat("=", winwidth(".") - 10)
     echohl NONE
-    echom ''
-    for x in reverse(s:all)
+    echom ""
+    let all = reverse(copy(s:all))
+    for x in l:all
         echohl Number
         echon l:ind . '            ' . repeat(' ', (len(s:all) / 10 - l:ind / 10))
         echohl Type
         echon s:allType[l:ind] . '           '
         echohl StorageClass
-        echon len(s:all[l:ind]) .'           '
+        echon len(s:all[l:ind]) .'           |'
         echohl String
         echon strpart(join(s:all[l:ind]), 0, winwidth('.') / 3)
         echohl NONE
@@ -99,52 +152,15 @@ func! extract#echo()
         echohl NONE
         return
     else
-        let s:pinned = s:all[l:answer]
-        call remove(s:all, l:answer)
-        echom string(s:pinned)
+        let s:extractAllDex -= 1
+        let s:allCount -= 1
+        let s:pinned = {"regcontents": remove(s:all, l:answer),
+                      \ "regtype"    : remove(s:allType, l:answer)}
+        call s:addToList(s:pinned, 2)
     endif
 endfun
 
-func! extract#giveList()
-    return s:all
-endfun
-
-func! extract#echoType()
-    echom string(s:allType)
-endfun
-
-func! s:addToList(event)
-    if g:extract_ignoreJustSpaces && match(a:event['regcontents'], "\\S") == -1
-        return
-    endif
-
-    " Add to register IF it doesn't already exist
-    if count(s:all, (a:event['regcontents'])) > 0
-        let l:index = index(s:all, a:event['regcontents'])
-        call remove(s:all, l:index)
-        call remove(s:allType, l:index)
-        let s:allCount = s:allCount - 1
-    endif
-
-    let s:all = add(s:all, (a:event['regcontents']))
-    let s:allType = add(s:allType, (a:event['regtype']))
-
-    if s:allCount > (g:extract_maxCount - 1)
-        call remove(s:all, 0)
-        call remove(s:allType, 0)
-    else
-        let s:allCount = s:allCount + 1
-        if !s:visual
-            let s:extractAllDex = s:allCount - 1
-        endif
-    endif
-endfunc
-
-func! ExtractPin(num)
-
-endfunc
-
-" end yank and add }}}
+" }}}
 
 func! s:saveReg(reg) "{{{
     let s:lastUsedReg = a:reg
@@ -162,7 +178,7 @@ func! extract#regPut(cmd, reg) "{{{
     " save cmd used
     let s:currentCmd = a:cmd
 
-    call s:addToList({'regcontents': getreg(a:reg, 1, 1), 'regtype' : getregtype(a:reg)})
+    call s:addToList({'regcontents': getreg(a:reg, 1, 1), 'regtype' : getregtype(a:reg)}, 0)
 
     call s:saveReg(s:all[s:extractAllDex])
 
@@ -310,7 +326,7 @@ func! extract#UnComplete() "{{{
 
     " if we are characther wise there and we only have 1 line, just do as is.
     if strpart(v:completed_item['menu'],1,1) ==# 'v' && strpart(v:completed_item['menu'],3,1) ==# '1'
-        call s:addToList({'regcontents': getreg(l:k, 1, 1), 'regtype' : getregtype(l:k)})
+        call s:addToList({'regcontents': getreg(l:k, 1, 1), 'regtype' : getregtype(l:k)}, 0)
         return
     endif
 
@@ -331,12 +347,11 @@ endfun
 autocmd CompleteDone * :call extract#UnComplete() "}}}
 
 func! extract#checkClip(timer) " {{{
-    let s:timercalled = 1
-    call s:addToList({'regcontents': getreg('0', 1, 1), 'regtype' : getregtype('0')})
+    call s:addToList({'regcontents': getreg('0', 1, 1), 'regtype' : getregtype('0')}, 1)
 
     try
-        call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')})
-        call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')})
+        call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')}, 1)
+        call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')}, 1)
     catch 5677
         echom 'weird clip error, dw bout it, E5677'
     endtry
@@ -371,7 +386,11 @@ func! s:replace(type, ...) "{{{
     silent normal! x
 
     call setreg(g:extract_op_func_register, s:currentReg, s:currentRegType)
-    call extract#regPut('p', g:extract_op_func_register)
+    if col('.') == col('$') - 1
+        call extract#regPut('p', g:extract_op_func_register)
+    else
+        call extract#regPut('P', g:extract_op_func_register)
+    endif
 
     let &selection = sel_save
     let @@ = reg_save
@@ -385,6 +404,8 @@ com! -range -nargs=1 VisExtractPut let s:visual = 1 | call extract#regPut(<q-arg
 com! -nargs=1 ExtractSycle call extract#cycle(<q-args>)
 com! -nargs=0 ExtractCycle call extract#cyclePasteType()
 com! -nargs=0 ExtractClear call extract#clear()
+com! -nargs=0 ExtractPin call extract#pin()
+com! -nargs=0 ExtractUnPin call extract#unpin()
 
 nnoremap <expr><Plug>(extract-put) ':ExtractPut p<cr>'
 nnoremap <expr><Plug>(extract-Put) ':ExtractPut P<cr>'
@@ -398,8 +419,8 @@ noremap <expr><Plug>(extract-cycle) ':ExtractCycle<cr>'
 " completion put and cycle if use mess up
 inoremap <Plug>(extract-completeReg) <c-g>u<C-R>=extract#complete('gP',1)<cr>
 inoremap <Plug>(extract-completeList) <c-g>u<C-R>=extract#complete('gP',0)<cr>
-inoremap <Plug>(extract-sycle) <esc>:ExtractSycle 1<cr>a
-inoremap <Plug>(extract-Sycle) <esc>:ExtractSycle -1<cr>a
+inoremap <Plug>(extract-sycle) <esc>:ExtractSycle -1<cr>a
+inoremap <Plug>(extract-Sycle) <esc>:ExtractSycle 1<cr>a
 inoremap <Plug>(extract-cycle) <esc>:ExtractCycle<cr>a
 
 nnoremap <Plug>(extract-replace-normal) :let g:extract_op_func_register=v:register \| set opfunc=<SID>replace<cr>g@
@@ -410,6 +431,9 @@ if g:extract_useDefaultMappings
     " mappings for putting
     nmap p <Plug>(extract-put)
     nmap P <Plug>(extract-Put)
+
+    nmap <leader>p :ExtractPin<cr>
+    nmap <leader>P :ExtractUnPin<cr>
 
     " mappings for cycling
     map <m-s> <Plug>(extract-sycle)
@@ -428,8 +452,8 @@ if g:extract_useDefaultMappings
     imap <m-S> <Plug>(extract-Sycle)
 
     " mappings for replace
-    nmap <silent> S <Plug>(extract-replace-normal)
-    vmap <silent> S <Plug>(extract-replace-visual)
+    nmap <silent> s <Plug>(extract-replace-normal)
+    vmap <silent> s <Plug>(extract-replace-visual)
 endif "}}}
 
 "end Commands and Mapping }}}
