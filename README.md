@@ -15,6 +15,7 @@
   to the top of the list, but not add a new occurance.
 - If you yank just whitespace or tabs it will ignore it, assuming you don't
   alter the option.
+- You're clipboards will be automatically pulled into the list on a timer, ignoring duplicates.
 
 ### Usage
 
@@ -31,6 +32,16 @@ linewise/blockwise/characther wise, hit c-s to cycle through them.
 
 Use `["reg]s` motion, this will delete and replace with the register you pick.
 If no register is specified it will use the default.
+
+##### Pinning
+
+Use `<leader>p` to open a input to ask you which you would like to pin. After doing
+this it will stay at the top of your list, so if even if you add more items to the list,
+putting will still use that pinned value.
+
+To unpin use `<leader>P`.
+
+Optinonally you can use ExtractPin and ExtractUnPin on the command line as well.
 
 #### Insert Mode
 
@@ -52,7 +63,7 @@ Use `<m-v>` to show a popup menu you for your registers.
 
 | Flag                           | Default                           | Description                                                                                |
 | -------------------            | --------------------------------- | ------------------------------------------------------                                     |
-| `g:extract_maxCount`           | 5                                 | How many yanks do you want to save in the list?                                            |
+| `g:extract_maxCount`           | 5                                 | How many yanks do you want to save in the list? I use 25                                          |
 | `g:extract_defaultRegister`    | '0'                               | Registered used to perform opeartions, it is set back to whatever it was previously after. |
 | `g:extract_ignoreRegisters`    | ['a', '.']                        | What registers to ignore                                                                   |
 | `g:extract_clipCheck`          | &updatetime                       | How often to check for clipboard changes                                                   |
@@ -68,6 +79,9 @@ It's cool, just map these
     " mappings for putting
     nmap p <Plug>(extract-put)
     nmap P <Plug>(extract-Put)
+    
+    nmap <leader>p :ExtractPin<cr>
+    nmap <leader>P :ExtractUnPin<cr>
 
     " mappings for cycling
     map <m-s> <Plug>(extract-sycle)
@@ -86,8 +100,8 @@ It's cool, just map these
     imap <m-S> <Plug>(extract-Sycle)
 
     " mappings for replace
-    nmap <silent> S <Plug>(extract-replace-normal)
-    vmap <silent> S <Plug>(extract-replace-visual)
+    nmap <silent> s <Plug>(extract-replace-normal)
+    vmap <silent> s <Plug>(extract-replace-visual)
 ##### Todo
 
 - Register completion by using the register name.
