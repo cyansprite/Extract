@@ -352,7 +352,7 @@ func! extract#checkClip(timer) " {{{
     try
         call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')}, 1)
         call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')}, 1)
-    catch 5677
+    catch *
         echom 'weird clip error, dw bout it, E5677'
     endtry
 endfunc
