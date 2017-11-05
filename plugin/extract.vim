@@ -383,10 +383,17 @@ func! s:replace(type, ...) "{{{
     endif
 
     call s:saveReg(g:extract_op_func_register)
-    silent normal! x
+    exec 'silent normal! "'.g:extract_op_func_register.'x'
+    let del = getreg(g:extract_op_func_register)
+    let lchar = strcharpart(l:del, match(l:del, '\>') - 1)
+    let lword = match(getline('.'), '\S')
 
     call setreg(g:extract_op_func_register, s:currentReg, s:currentRegType)
+
     if col('.') == col('$') - 1
+        if len(l:del) != 1 && len(lchar) <= 1 && lword != -1
+            norm! h
+        endif
         call extract#regPut('p', g:extract_op_func_register)
     else
         call extract#regPut('P', g:extract_op_func_register)
@@ -453,6 +460,7 @@ if g:extract_useDefaultMappings
 
     " mappings for replace
     nmap <silent> s <Plug>(extract-replace-normal)
+    nmap <silent> S <Plug>(extract-replace-normal)$
     vmap <silent> s <Plug>(extract-replace-visual)
 endif "}}}
 
