@@ -2,7 +2,10 @@
 
 <i>Extract; Draw forth what really matters</i>
 
-## Extract puts and yanks to a list with normal, visual swapping, and insert list/register completion.
+## Extract puts and yanks to a list with normal, visual swapping, and insert list/register/deoplete completion.
+##### Version 3
+<a href="https://imgur.com/Q1f71tJ"><img src="https://i.imgur.com/Q1f71tJ.gif" title="source: imgur.com" /></a>
+
 ##### Version 2
 <a href="https://imgur.com/1wVXrki"><img src="https://i.imgur.com/1wVXrki.gif" title="source: imgur.com" /></a>
 
