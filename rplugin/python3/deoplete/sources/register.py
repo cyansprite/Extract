@@ -5,14 +5,15 @@ class Source(Base):
     def __init__(self, vim):
         Base.__init__(self, vim)
 
-        self.name = 'extract'
+        self.name = 'register'
         self.kind = 'keyword'
-        self.mark = '[extract]'
+        self.mark = '[register]'
         self.rank = 4
 
     def gather_candidates(self, context):
         win = self.vim.current.window
         lines = [str(i) for i in self.vim.current.buffer[:]]
 
-        ls = self.vim.eval('extract#all()')
-        return [{ 'word': x[0].strip() } for x in ls]
+        ls = self.vim.eval('extract#getRegisterCompletions()')
+        return ls
+

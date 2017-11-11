@@ -315,6 +315,11 @@ func! extract#getRegisterCompletions()
         " finally add to words for completion
         call add(words,{'empty': 1, 'menu': '['. getregtype(kind) . ' '. len(finalwords) .' ]', 'kind' : kind, 'word' : strpart((join(finalwords, '')), 0, winwidth('.') / 2 )})
     endfor
+
+    " FIXME
+    let s:currentCmd = 'gP'
+    let s:isRegisterCompleteType = 1
+    let s:initcomplete = 1
     return words
 endfunc
 
@@ -333,6 +338,15 @@ func! extract#UnComplete() "{{{
 
     " if we did do the complete let us know not to do this again
     " init put with cmd and reg name
+    try
+        let k = v:completed_item['kind']
+        if match(v:completed_item['menu'], '\cv \d') == -1
+            return
+        endif
+    catch /.*/
+        return
+    endtry
+
     let k = v:completed_item['kind']
     let s:initcomplete = 0
 
@@ -343,7 +357,13 @@ func! extract#UnComplete() "{{{
     endif
 
     " undo the complete...
-    silent! undo
+    if match(v:completed_item['menu'], 'register') == -1
+        silent! undo
+    else
+        call setline('.', substitute(getline('.'), v:completed_item["word"], "",""))
+        " This weird way of breaking undo... I don't know an easier way so, yay
+        norm! iu
+    endif
 
     " if we are registers use them, if we are the list, use index
     if s:isRegisterCompleteType
@@ -365,7 +385,7 @@ func! extract#checkClip() " {{{
     try
         call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')}, 1)
         call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')}, 1)
-    catch *
+    catch /.*/
         echom 'weird clip error, dw bout it, E5677'
     endtry
 endfunc
