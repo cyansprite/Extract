@@ -2,13 +2,14 @@
 if exists("g:extract_loaded")
   finish
 endif
+
 let g:extract_loaded = 1
 
 if !has_key(g:,"extract_clipCheck")
     let g:extract_clipCheck = &updatetime * 2
 endif
 
-let timer = timer_start(g:extract_clipCheck, 'extract#checkClip', {'repeat': -1})
+" let timer = timer_start(g:extract_clipCheck, 'extract#checkClip', {'repeat': -1})
 
 " }}}
 
@@ -177,7 +178,7 @@ endfun "}}}
 func! extract#regPut(cmd, reg) "{{{
     " save cmd used
     let s:currentCmd = a:cmd
-
+    call extract#checkClip()
     call s:addToList({'regcontents': getreg(a:reg, 1, 1), 'regtype' : getregtype(a:reg)}, 0)
 
     call s:saveReg(s:all[s:extractAllDex])
@@ -253,6 +254,8 @@ func! extract#complete(cmd, isRegisterComplete) " {{{
     let s:currentCmd = a:cmd
     let s:doDelete = 0
     let s:isRegisterCompleteType = a:isRegisterComplete
+
+    call extract#checkClip()
 
     " init blank list
     let words = []
@@ -346,7 +349,7 @@ endfun
 
 autocmd CompleteDone * :call extract#UnComplete() "}}}
 
-func! extract#checkClip(timer) " {{{
+func! extract#checkClip() " {{{
     call s:addToList({'regcontents': getreg('0', 1, 1), 'regtype' : getregtype('0')}, 1)
 
     try
