@@ -250,71 +250,80 @@ func! extract#cyclePasteType() "{{{
 endfun "}}}
 
 func! extract#complete(cmd, isRegisterComplete) " {{{
-    " save stuff
-    let s:currentCmd = a:cmd
-    let s:doDelete = 0
-    let s:isRegisterCompleteType = a:isRegisterComplete
-
-    call extract#checkClip()
-
-    " init blank list
-    let words = []
-
-    " if register...
-    if a:isRegisterComplete
-        " get the contents
-        redir => s:com
-        silent! reg
-        redir END
-        let lol = split(s:com, "\n")
-        let l:ind = -1
-        " ignore first line, the rest parse
-        for s in lol
-            let l:ind = l:ind + 1
-            if l:ind == 0
-                continue
-            endif
-            let kind = strpart(s, 1, 2)
-            let type = getregtype(kind)
-            if count(g:extract_ignoreRegisters,  split(kind)) > 0
-                continue
-            endif
-            let word = getreg(kind, 1, 1)
-            let i2 = -1
-
-            " remove extra whitespace for multiple lines
-            let finalwords = []
-
-            for w in word
-                let i2 = i2 + 1
-                if i2 == 0
-                    call add(finalwords,w)
-                    continue
-                endif
-                call add(finalwords,substitute(w, '^\s\+\|\s\+$', "@", "g"))
-            endfor
-            " finally add to words for completion
-            call add(words,{'empty': 1, 'menu': '['. getregtype(kind) . ' '. len(finalwords) .' ]', 'kind' : kind, 'word' : strpart((join(finalwords, '')), 0, winwidth('.') / 2 )})
-        endfor
-        " if we are list and we aren't empty
-    elseif s:allCount > 0
-        let l:ind = -1
-        " loop and add items with index
-        for x in s:all
-            let l:ind = l:ind + 1
-            call add(words, {'empty': 1, 'kind': l:ind, 'menu': '['.s:allType[l:ind]. ' '. len(s:all[l:ind]) .']', 'word': strpart(join(s:all[l:ind]),0, winwidth('.')/2)})
-        endfor
-        let words = reverse(words)
-    else
-        return ""
-    endif
-
     " with words, complete at current positon, init complete for autocmd, and
     " return '' so we don't insert anything.
-    call complete(col('.'), words)
+    let s:currentCmd = a:cmd
     let s:initcomplete = 1
+    let s:doDelete = 0
+    let s:isRegisterCompleteType = a:isRegisterComplete
+    call extract#checkClip()
+
+    if a:isRegisterComplete
+        call complete(col('.'), extract#getRegisterCompletions())
+    else
+        call complete(col('.'), extract#getListCompletions())
+    endif
     return ''
-endfun "}}}
+endfun
+
+func! extract#getListCompletions()
+    let l:ind = -1
+    let words = []
+    " loop and add items with index
+    for x in s:all
+        let l:ind = l:ind + 1
+        call add(words, {'empty': 1, 'kind': l:ind, 'menu': '['.s:allType[l:ind]. ' '. len(s:all[l:ind]) .']', 'word': strpart(join(s:all[l:ind]),0, winwidth('.')/2)})
+    endfor
+    let words = reverse(words)
+    return l:words
+endfunc
+
+func! extract#getRegisterCompletions()
+    let words = []
+
+    " get the contents
+    redir => s:com
+    silent! reg
+    redir END
+    let lol = split(s:com, "\n")
+    let l:ind = -1
+    " ignore first line, the rest parse
+    for s in lol
+        let l:ind = l:ind + 1
+        if l:ind == 0
+            continue
+        endif
+        let kind = strpart(s, 1, 2)
+        let type = getregtype(kind)
+        if count(g:extract_ignoreRegisters,  split(kind)) > 0
+            continue
+        endif
+        let word = getreg(kind, 1, 1)
+        let i2 = -1
+
+        " remove extra whitespace for multiple lines
+        let finalwords = []
+
+        for w in word
+            let i2 = i2 + 1
+            if i2 == 0
+                call add(finalwords,w)
+                continue
+            endif
+            call add(finalwords,substitute(w, '^\s\+\|\s\+$', "@", "g"))
+        endfor
+        " finally add to words for completion
+        call add(words,{'empty': 1, 'menu': '['. getregtype(kind) . ' '. len(finalwords) .' ]', 'kind' : kind, 'word' : strpart((join(finalwords, '')), 0, winwidth('.') / 2 )})
+    endfor
+    return words
+endfunc
+
+"}}}
+
+func! extract#all() " for deoplete {{{
+    call extract#checkClip()
+    return s:all
+endfunc " }}}
 
 func! extract#UnComplete() "{{{
     " if we aren't init we didn't do the complete bail
@@ -350,6 +359,7 @@ endfun
 autocmd CompleteDone * :call extract#UnComplete() "}}}
 
 func! extract#checkClip() " {{{
+    call s:addToList({'regcontents': getreg('"', 1, 1), 'regtype' : getregtype('"')}, 1)
     call s:addToList({'regcontents': getreg('0', 1, 1), 'regtype' : getregtype('0')}, 1)
 
     try
