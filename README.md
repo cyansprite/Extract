@@ -71,12 +71,13 @@ Use `<m-v>` to show a popup menu you for your registers.
 
 | Flag                           | Default                           | Description                                                                                |
 | -------------------            | --------------------------------- | ------------------------------------------------------                                     |
-| `g:extract_maxCount`           | 5                                 | How many yanks do you want to save in the list? I use 25                                          |
+| `g:extract_maxCount`           | 5                                 | How many yanks do you want to save in the list? I use 25                                   |
 | `g:extract_defaultRegister`    | '0'                               | Registered used to perform opeartions, it is set back to whatever it was previously after. |
 | `g:extract_ignoreRegisters`    | ['a', '.']                        | What registers to ignore                                                                   |
 | `g:extract_clipCheck`          | &updatetime                       | How often to check for clipboard changes                                                   |
 | `g:extract_ignoreJustSpaces`   | &updatetime                       | How often to check for clipboard changes                                                   |
 | `g:extract_useDefaultMappings` | 1                                 | Use the default mappings                                                                   |
+| `g:extract_loadDeoplete`       | 0                                 | Use deoplete?                                                                              |
 
 ### I Don't Like your mappings...
 
