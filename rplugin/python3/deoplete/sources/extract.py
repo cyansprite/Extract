@@ -9,10 +9,14 @@ class Source(Base):
         self.kind = 'keyword'
         self.mark = '[extract]'
         self.rank = 4
+        self.doit = self.vim.eval("g:extract_loadDeoplete")
 
     def gather_candidates(self, context):
-        win = self.vim.current.window
-        lines = [str(i) for i in self.vim.current.buffer[:]]
+        if self.doit:
+            win = self.vim.current.window
+            lines = [str(i) for i in self.vim.current.buffer[:]]
 
-        ls = self.vim.eval('extract#all()')
-        return [{ 'word': x[0].strip() } for x in ls]
+            ls = self.vim.eval('extract#all()')
+            return [{ 'word': x[0].strip() } for x in ls]
+        else:
+            return []
