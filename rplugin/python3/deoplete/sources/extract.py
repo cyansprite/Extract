@@ -13,9 +13,6 @@ class Source(Base):
 
     def gather_candidates(self, context):
         if self.doit:
-            win = self.vim.current.window
-            lines = [str(i) for i in self.vim.current.buffer[:]]
-
             ls = self.vim.eval('extract#all()')
             return [{ 'word': x[0].strip() } for x in ls]
         else:

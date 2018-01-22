@@ -40,6 +40,10 @@ if !has_key(g:,"extract_loadDeoplete")
     let g:extract_loadDeoplete = 0
 endif
 
+if !has_key(g:,"extract_loadNCM")
+    let g:extract_loadNCM = 0
+endif
+
 if !has_key(g:,"extract_defaultRegister")
     let g:extract_defaultRegister = '0'
 endif
