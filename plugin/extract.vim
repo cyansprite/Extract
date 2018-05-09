@@ -390,12 +390,16 @@ func! extract#checkClip() " {{{
     call s:addToList({'regcontents': getreg('"', 1, 1), 'regtype' : getregtype('"')}, 1)
     call s:addToList({'regcontents': getreg('0', 1, 1), 'regtype' : getregtype('0')}, 1)
 
-    try
-        call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')}, 1)
-        call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')}, 1)
-    catch /.*/
-        echom 'weird clip error, dw bout it, E5677'
-    endtry
+    if $SSH_CLIENT
+        echo 'ignoring +* because ssh'
+    else
+        try
+            call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')}, 1)
+            call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')}, 1)
+        catch /.*/
+            echom 'weird clip error, dw bout it, E5677'
+        endtry
+    endif
 endfunc
 "}}}
 
