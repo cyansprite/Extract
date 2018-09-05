@@ -1,6 +1,6 @@
 " Setup {{{
 if exists("g:extract_loaded")
-  finish
+    finish
 endif
 
 let g:extract_loaded = 1
@@ -479,34 +479,49 @@ nnoremap <Plug>(extract-replace-normal) :let g:extract_op_func_register=v:regist
 vnoremap <Plug>(extract-replace-visual) :<c-u> let g:extract_op_func_register=v:register \| call <SID>replace(visualmode(), 1)<cr>
 
 " Default mappings {{{
+let g:extract_normal_mappings = {
+            \ 'p'         : '<Plug>(extract-put)',
+            \ 'P'         : '<Plug>(extract-Put)',
+            \ '<leader>p' : ':ExtractPin<cr>A',
+            \ '<leader>P' : ':ExtractUnPin<cr>A',
+            \ 's '        : '<Plug>(extract-replace-normal)',
+            \ 'S '        : '<Plug>(extract-replace-normal)$',
+            \ 'ss'        : 'V<Plug>(extract-replace-visual)'
+            \ }
+
+let g:extract_global_mappings = {
+            \ '<m-s>' : '<Plug>(extract-sycle)',
+            \ '<m-S>' : '<Plug>(extract-Sycle)',
+            \ '<c-s>' : '<Plug>(extract-cycle)'
+            \ }
+
+let g:extract_visual_mappings = {
+            \ 'p' : '<Plug>(extract-put)',
+            \ 'P' : '<Plug>(extract-Put)',
+            \ 's' : '<Plug>(extract-replace-visual)'
+            \ }
+
+let g:extract_insert_mappings = {
+            \ '<m-v>' :  '<Plug>(extract-completeReg)',
+            \ '<c-v>' :  '<Plug>(extract-completeList)',
+            \ '<c-s>' :  '<Plug>(extract-cycle)',
+            \ '<m-s>' :  '<Plug>(extract-sycle)',
+            \ '<m-S>' :  '<Plug>(extract-Sycle)'
+            \ }
+
 if g:extract_useDefaultMappings
-    " mappings for putting
-    nmap p <Plug>(extract-put)
-    nmap P <Plug>(extract-Put)
-
-    nmap <leader>p :ExtractPin<cr>
-    nmap <leader>P :ExtractUnPin<cr>
-
-    " mappings for cycling
-    map <m-s> <Plug>(extract-sycle)
-    map <m-S> <Plug>(extract-Sycle)
-    map <c-s> <Plug>(extract-cycle)
-
-    " mappings for visual
-    vmap p <Plug>(extract-put)
-    vmap P <Plug>(extract-Put)
-
-    " mappings for insert
-    imap <m-v> <Plug>(extract-completeReg)
-    imap <c-v> <Plug>(extract-completeList)
-    imap <c-s> <Plug>(extract-cycle)
-    imap <m-s> <Plug>(extract-sycle)
-    imap <m-S> <Plug>(extract-Sycle)
-
-    " mappings for replace
-    nmap <silent> s <Plug>(extract-replace-normal)
-    nmap <silent> S <Plug>(extract-replace-normal)$
-    vmap <silent> s <Plug>(extract-replace-visual)
-endif "}}}
+    for key in keys(g:extract_normal_mappings)
+        exec printf("nmap <silent> %s %s" , key, g:extract_normal_mappings[key])
+    endfor
+    for key in keys(g:extract_global_mappings)
+        exec printf("map <silent> %s %s" , key, g:extract_global_mappings[key])
+    endfor
+    for key in keys(g:extract_visual_mappings)
+        exec printf("vmap <silent> %s %s" , key, g:extract_visual_mappings[key])
+    endfor
+    for key in keys(g:extract_insert_mappings)
+        exec printf("imap <silent> %s %s" , key, g:extract_insert_mappings[key])
+    endfor
+endif
 
 "end Commands and Mapping }}}
