@@ -517,7 +517,7 @@ if g:extract_useDefaultMappings
         exec printf("map <silent> %s %s" , key, g:extract_global_mappings[key])
     endfor
     for key in keys(g:extract_visual_mappings)
-        exec printf("vmap <silent> %s %s" , key, g:extract_visual_mappings[key])
+        exec printf("xmap <silent> %s %s" , key, g:extract_visual_mappings[key])
     endfor
     for key in keys(g:extract_insert_mappings)
         exec printf("imap <silent> %s %s" , key, g:extract_insert_mappings[key])
