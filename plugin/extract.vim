@@ -73,6 +73,8 @@ func! extract#YankHappened(event)
         return
     endif
 
+    call extract#checkClip()
+
     call s:addToList(a:event, 0)
 endfunc
 
@@ -150,7 +152,7 @@ func! extract#echo()
     echom ""
     echom ""
     echohl Question
-    let answer = input("Index To Pin (ctrl-c cancels) >>> ")
+    let answer = input('Index To Pin (ctrl-c cancels) >>> ')
     echohl None
 
     let l:answer = str2nr(l:answer)
