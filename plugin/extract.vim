@@ -4,13 +4,6 @@ if exists("g:extract_loaded")
 endif
 
 let g:extract_loaded = 1
-
-if !has_key(g:,"extract_clipCheck")
-    let g:extract_clipCheck = &updatetime * 2
-endif
-
-" let timer = timer_start(g:extract_clipCheck, 'extract#checkClip', {'repeat': -1})
-
 " }}}
 
 " Script vars {{{
