@@ -25,6 +25,10 @@ call extract#clear()
 " end local vars}}}
 
 " Vars users can pick {{{
+if !has_key(g:,"extract_autoCheckSystemClipboard")
+    let g:extract_autoCheckSystemClipboard = 1
+endif
+
 if !has_key(g:,"extract_maxCount")
     let g:extract_maxCount = 5
 endif
@@ -66,7 +70,7 @@ func! extract#YankHappened(event)
         return
     endif
 
-    call extract#checkClip()
+    call extract#checkClip(0)
 
     call s:addToList(a:event, 0)
 endfunc
@@ -181,7 +185,7 @@ endfun "}}}
 func! extract#regPut(cmd, reg) "{{{
     " save cmd used
     let s:currentCmd = a:cmd
-    call extract#checkClip()
+    call extract#checkClip(0)
     call s:addToList({'regcontents': getreg(a:reg, 1, 1), 'regtype' : getregtype(a:reg)}, 0)
 
     call s:saveReg(s:all[s:extractAllDex])
@@ -259,7 +263,7 @@ func! extract#complete(cmd, isRegisterComplete) " {{{
     let s:initcomplete = 1
     let s:doDelete = 0
     let s:isRegisterCompleteType = a:isRegisterComplete
-    call extract#checkClip()
+    call extract#checkClip(0)
 
     if a:isRegisterComplete
         call complete(col('.'), extract#getRegisterCompletions())
@@ -329,7 +333,7 @@ endfunc
 "}}}
 
 func! extract#all() " for deoplete {{{
-    call extract#checkClip()
+    call extract#checkClip(0)
     return s:all
 endfunc " }}}
 
@@ -381,19 +385,21 @@ endfun
 
 autocmd CompleteDone * :call extract#UnComplete() "}}}
 
-func! extract#checkClip() " {{{
+func! extract#checkClip(force) " {{{
     call s:addToList({'regcontents': getreg('"', 1, 1), 'regtype' : getregtype('"')}, 1)
     call s:addToList({'regcontents': getreg('0', 1, 1), 'regtype' : getregtype('0')}, 1)
 
     if $SSH_CLIENT
         echo 'ignoring +* because ssh'
     else
-        try
-            call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')}, 1)
-            call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')}, 1)
-        catch /.*/
-            echom 'weird clip error, dw bout it, E5677'
-        endtry
+        if g:extract_autoCheckSystemClipboard || a:force
+            try
+                call s:addToList({'regcontents': getreg('+', 1, 1), 'regtype' : getregtype('+')}, 1)
+                call s:addToList({'regcontents': getreg('*', 1, 1), 'regtype' : getregtype('*')}, 1)
+            catch /.*/
+                echom 'weird clip error, dw bout it, E5677'
+            endtry
+        endif
     endif
 endfunc
 "}}}
@@ -453,6 +459,7 @@ com! -nargs=0 ExtractCycle call extract#cyclePasteType()
 com! -nargs=0 ExtractClear call extract#clear()
 com! -nargs=0 ExtractPin call extract#pin()
 com! -nargs=0 ExtractUnPin call extract#unpin()
+com! -nargs=0 ExtractRefreshClipboard call extract#checkClip(1)
 
 nnoremap <expr><Plug>(extract-put) ':ExtractPut p<cr>'
 nnoremap <expr><Plug>(extract-Put) ':ExtractPut P<cr>'
