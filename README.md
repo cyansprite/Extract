@@ -3,6 +3,9 @@
 <i>Extract; Draw forth what really matters</i>
 
 ## Extract puts and yanks to a list with normal, visual swapping, and insert list/register/deoplete completion.
+##### Version 4 Indexes
+<a href="https://imgur.com/a/E0dnd58"><img src="https://i.imgur.com/neepRwx.gif" title="source: imgur.com" /></a>
+
 ##### Version 3
 <a href="https://imgur.com/Q1f71tJ"><img src="https://i.imgur.com/Q1f71tJ.gif" title="source: imgur.com" /></a>
 
@@ -35,6 +38,33 @@ Use `p`/`P` like normal, once you use it with different registers or you yank
 text, it will add those to the list.  Then, you can use use `s` to go forward
 in the list, and `S` to go backwards. If you want to change whether it pastes
 linewise/blockwise/characther wise, hit c-s to cycle through them.
+
+#### Index
+
+You can use insert completion (the c-v mapping by default in insert) or the
+default normal mappings for <up>/<down> to pick an index (seeing the list),
+whenever you do this it will select a new one in the list. To see the list you
+can use <leader>o (by default).
+Late noteworthy thing, when a new yank happens index will reset to 0 to make
+sure you are pasting in the thing you just yanked.
+
+Examples:
+--------------------------------------------------------------------------------
+
+Note: index will start at 4 (top, makes sense)
+List: Index 4
+A <- Will paste
+B
+C
+clip +
+clip *
+
+List: Index 0
+A
+B
+C <- Will paste
+clip +
+clip *
 
 ##### Swapping
 
@@ -79,38 +109,54 @@ Use `<m-v>` to show a popup menu you for your registers.
 | `g:extract_useDefaultMappings` | 1                                 | Use the default mappings                                                                   |
 | `g:extract_loadDeoplete`       | 0                                 | Use deoplete?                                                                              |
 
+```vim
+" Color options for preview window
+let g:extract_preview_colors = {
+            \ 'Title':      'Special',
+            \ 'CursorLine': 'CursorLine',
+            \ 'Separator':  'Function',
+            \ 'Index':      'Number',
+            \ 'Type':       'Type',
+            \ 'Lines':      'Boolean',
+            \ 'Content':    'Statement'
+            \ }
+```
+
 ### I Don't Like your mappings...
 
 It's cool, just map these
 
 ```vim
+let g:extract_normal_mappings = {
+            \ 'p'         : '<Plug>(extract-put)',
+            \ 'P'         : '<Plug>(extract-Put)',
+            \ '<leader>p' : ':ExtractPin<cr>A',
+            \ '<leader>P' : ':ExtractUnPin<cr>A',
+            \ 's '        : '<Plug>(extract-replace-normal)',
+            \ 'S '        : '<Plug>(extract-replace-normal)$',
+            \ 'ss'        : 'V<Plug>(extract-replace-visual)',
+            \ '<leader>o' : '<Plug>(extract-preview)',
+            \ '<down>'     : '<Plug>(extract-sin-preview-inc)',
+            \ '<up>'     : '<Plug>(extract-sin-preview-dec)'
+            \ }
+
+let g:extract_global_mappings = {
+            \ '<m-s>' : '<Plug>(extract-sycle)',
+            \ '<m-S>' : '<Plug>(extract-Sycle)',
+            \ '<c-s>' : '<Plug>(extract-cycle)'
+            \ }
+
+let g:extract_visual_mappings = {
+            \ 'p' : '<Plug>(extract-put)',
+            \ 'P' : '<Plug>(extract-Put)',
+            \ 's' : '<Plug>(extract-replace-visual)'
+            \ }
+
+let g:extract_insert_mappings = {
+            \ '<m-v>' :  '<Plug>(extract-completeReg)',
+            \ '<c-v>' :  '<Plug>(extract-completeList)',
+            \ '<c-s>' :  '<Plug>(extract-cycle)',
+            \ '<m-s>' :  '<Plug>(extract-sycle)',
+            \ '<m-S>' :  '<Plug>(extract-Sycle)'
+            \ }
 ```
-    " mappings for putting
-    nmap p <Plug>(extract-put)
-    nmap P <Plug>(extract-Put)
-    
-    nmap <leader>p :ExtractPin<cr>
-    nmap <leader>P :ExtractUnPin<cr>
-
-    " mappings for cycling
-    map <m-s> <Plug>(extract-sycle)
-    map <m-S> <Plug>(extract-Sycle)
-    map <c-s> <Plug>(extract-cycle)
-
-    " mappings for visual
-    vmap p <Plug>(extract-put)
-    vmap P <Plug>(extract-Put)
-
-    " mappings for insert
-    imap <m-v> <Plug>(extract-completeReg)
-    imap <c-v> <Plug>(extract-completeList)
-    imap <c-s> <Plug>(extract-cycle)
-    imap <m-s> <Plug>(extract-sycle)
-    imap <m-S> <Plug>(extract-Sycle)
-
-    " mappings for replace
-    nmap <silent> s <Plug>(extract-replace-normal)
-    vmap <silent> s <Plug>(extract-replace-visual)
-##### Todo
-
-- Register completion by using the register name.
