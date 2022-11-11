@@ -19,7 +19,12 @@ func! extract#clear()
     let s:initcomplete = 0
     let s:visual = 0
     let s:pinned = []
+    let s:index = 0
 endfun
+
+func! extract#printList()
+    echom string(s:all)
+endfunc
 
 call extract#clear()
 " end local vars}}}
@@ -27,6 +32,18 @@ call extract#clear()
 " Vars users can pick {{{
 if !has_key(g:,"extract_autoCheckSystemClipboard")
     let g:extract_autoCheckSystemClipboard = 1
+endif
+
+if !has_key(g:,"extract_preview_colors")
+    let g:extract_preview_colors = {
+                \ 'Title':      'Special',
+                \ 'CursorLine': 'CursorLine',
+                \ 'Separator':  'Function',
+                \ 'Index':      'Number',
+                \ 'Type':       'Type',
+                \ 'Lines':      'Boolean',
+                \ 'Content':    'Statement'
+                \ }
 endif
 
 if !has_key(g:,"extract_maxCount")
@@ -66,6 +83,7 @@ augroup Extract
 augroup END
 
 func! extract#YankHappened(event)
+    let s:index = 0
     if count(g:extract_ignoreRegisters,  split(a:event['regname'])) > 0
         return
     endif
@@ -139,7 +157,8 @@ func! extract#echo()
         echohl Type
         echon s:allType[l:ind] . '           '
         echohl StorageClass
-        echon len(s:all[l:ind]) .'           |'
+        let lines = len(s:all[l:ind])
+        echon lines .repeat(' ', 12-len(string(lines))).'|'
         echohl String
         echon strpart(join(s:all[l:ind]), 0, winwidth('.') / 3)
         echohl NONE
@@ -192,11 +211,15 @@ func! extract#regPut(cmd, reg) "{{{
 
     call setreg(g:extract_defaultRegister, s:all[s:extractAllDex], s:allType[s:extractAllDex])
 
-    call extract#put()
+    call extract#put(1)
 endfun "}}}
 
-func! extract#put() "{{{
+func! extract#put(indexBehaviour) "{{{
     " put from our reg
+    if a:indexBehaviour
+        let r = s:all[len(s:all) - s:index - 1]
+        call setreg(g:extract_defaultRegister, l:r, s:currentRegType)
+    endif
     try
         exe "norm! ". (s:visual ? "gv" : "") ."\"". g:extract_defaultRegister . s:currentCmd
     catch E353
@@ -232,7 +255,7 @@ func! extract#cycle(inc) "{{{
 
     silent! undo
 
-    call extract#put()
+    call extract#put(0)
 endfunc "}}}
 
 func! extract#cyclePasteType() "{{{
@@ -252,7 +275,7 @@ func! extract#cyclePasteType() "{{{
 
     silent! undo
 
-    call extract#put()
+    call extract#put(0)
 
 endfun "}}}
 
@@ -300,12 +323,14 @@ func! extract#getRegisterCompletions()
         if l:ind == 0
             continue
         endif
+        let parts = split(s)
         let kind = strpart(s, 1, 2)
-        let type = getregtype(kind)
-        if count(g:extract_ignoreRegisters,  split(kind)) > 0
+        let reg = strpart(parts[1], 1, 2)
+        let type = getregtype(s)
+        if count(g:extract_ignoreRegisters,  reg) > 0
             continue
         endif
-        let word = getreg(kind, 1, 1)
+        let word = getreg(reg, 1, 1)
         let i2 = -1
 
         " remove extra whitespace for multiple lines
@@ -320,7 +345,7 @@ func! extract#getRegisterCompletions()
             call add(finalwords,substitute(w, '^\s\+\|\s\+$', "@", "g"))
         endfor
         " finally add to words for completion
-        call add(words,{'empty': 1, 'menu': '['. getregtype(kind) . ' '. len(finalwords) .' ]', 'kind' : kind, 'word' : strpart((join(finalwords, '')), 0, winwidth('.') / 2 )})
+        call add(words,{'empty': 1, 'menu': '['. getregtype(kind) . ' '. len(finalwords) .' ]', 'kind' : kind . ' ' . reg, 'word' : strpart((join(finalwords, '')), 0, winwidth('.') / 2 )})
     endfor
 
     " FIXME
@@ -355,6 +380,8 @@ func! extract#UnComplete() "{{{
     endtry
 
     let k = v:completed_item['kind']
+    " yay for math
+    let s:index = (k + 1 - len(s:all)) * -1
     let s:initcomplete = 0
 
     " if we are characther wise there and we only have 1 line, just do as is.
@@ -378,7 +405,7 @@ func! extract#UnComplete() "{{{
     else
         call s:saveReg(s:all[str2nr(k)])
         call setreg(g:extract_defaultRegister, s:all[str2nr(k)], s:allType[str2nr(k)])
-        call extract#put()
+        call extract#put(1)
     endif
 
 endfun
@@ -450,6 +477,129 @@ func! s:replace(type, ...) "{{{
 endfunction
 "}}}
 
+func! extract#get_preview_text()
+    let l:ind = len(s:all) - 1
+    let words = []
+    let r = "Index        Type         Lines        |Register Contents\n"
+    let r .= repeat("=", &tw) . "\n"
+    let s:pos = {}
+    let r .= ""
+    let all = reverse(copy(s:all))
+    for x in l:all
+        let a = (l:ind) . repeat(' ', 12) . repeat(' ', (len(s:all) / 10 - l:ind / 10))
+        let b = s:allType[l:ind] . repeat(' ', 12)
+        let lines = len(s:all[l:ind])
+        let c = lines .repeat(' ', 13-len(string(lines))).'|'
+        let d = trim(strpart(join(s:all[l:ind]), 0, winwidth('.') / 3))
+        let r .= a.b.c.d."\n"
+        let s:pos[l:ind] = [a,b,c,d]
+        let l:ind = l:ind - 1
+    endfor
+
+    let r.= "\n"
+    let r.= "\n"
+    return r
+endfunc
+
+func! extract#single_index_inc(dir)
+    if empty(s:all)
+        return ''
+    endif
+    let s:index = ((s:index + a:dir) % (len(s:all)))
+    if s:index < 0
+        let s:index = len(s:all) - 1
+    endif
+    return string(s:all[len(s:all) - s:index - 1])
+endfunc
+
+let s:preview_win_id = -1
+func! extract#show_preview(sin, dir)
+    if s:preview_win_id != -1
+        call extract#single_index_inc(a:dir)
+        call nvim_win_set_cursor(s:preview_win_id, [s:index + 3, 1])
+        call nvim_buf_clear_namespace(s:buf, s:cursor_ns, 0, -1)
+        call nvim_buf_add_highlight(s:buf, s:cursor_ns, g:extract_preview_colors['CursorLine'], s:index + 2, 0, -1)
+        return
+    endif
+
+    if a:sin
+        let x = extract#single_index_inc(a:dir)
+        if x == ''
+            echom 'Nothing to preview or cycle yet'
+            return
+        endif
+    endif
+    let r = extract#get_preview_text()
+    call extract#close_preview()
+
+    let bufname = "Extract Preview"
+    let s:buf = nvim_create_buf(v:false, v:true)
+    let lines = split(r, "\n")
+
+    let s:ns = nvim_create_namespace('')
+    let s:cursor_ns = nvim_create_namespace('')
+    call nvim_buf_set_name(s:buf, bufname)
+    call nvim_buf_set_option(s:buf, 'buftype',   'nofile')
+    call nvim_buf_set_option(s:buf, 'bufhidden', 'wipe')
+    call nvim_buf_set_option(s:buf, 'buflisted', v:false)
+    call nvim_buf_set_option(s:buf, 'swapfile',  v:false)
+    call nvim_buf_set_lines(s:buf, 0, len(lines), v:false, lines)
+    call nvim_buf_set_option(s:buf, 'modifiable',  v:false)
+    call nvim_buf_add_highlight(s:buf, s:ns, g:extract_preview_colors['Title'], 0, 0, -1)
+    call nvim_buf_add_highlight(s:buf, s:ns, g:extract_preview_colors['Separator'], 1, 0, -1)
+
+    let l:ind = len(s:all) - 1
+    let x = 0
+    for l in lines
+        let x = x + 1
+        if x < 3 || l:ind < 0
+            continue
+        endif
+        let al = len(s:pos[l:ind][0])
+        let bl = len(s:pos[l:ind][1])
+        let cl = len(s:pos[l:ind][2])
+        let dl = len(s:pos[l:ind][3])
+        call nvim_buf_add_highlight(s:buf, s:ns, g:extract_preview_colors['Index'], x-1, 0, al)
+        call nvim_buf_add_highlight(s:buf, s:ns, g:extract_preview_colors['Type'], x-1, al, al+bl)
+        call nvim_buf_add_highlight(s:buf, s:ns, g:extract_preview_colors['Lines'], x-1, al+bl, al+bl+cl-1)
+        call nvim_buf_add_highlight(s:buf, s:ns, g:extract_preview_colors['Content'], x-1, al+bl+cl-1, al+bl+cl+dl)
+        call nvim_buf_clear_namespace(s:buf, s:cursor_ns, 0, -1)
+        call nvim_buf_add_highlight(s:buf, s:cursor_ns, g:extract_preview_colors['CursorLine'], s:index + 2, 0, -1)
+        let l:ind = l:ind - 1
+    endfor
+
+    let height = max([2, len(lines)])
+
+    let s:preview_win_id = nvim_open_win(s:buf, v:false, {
+                \ 'relative': 'cursor',
+                \ 'row': 1,
+                \ 'col': 0,
+                \ 'width': &tw,
+                \ 'height': height,
+                \ 'style': 'minimal'
+                \ })
+
+    call nvim_win_set_option(s:preview_win_id, 'foldenable',  v:false)
+    call nvim_win_set_cursor(s:preview_win_id, [s:index + 3, 1])
+    nmap <c-u> <cmd>silent! call nvim_win_set_cursor(<sid>preview_win_id, [nvim_win_get_cursor(<sid>preview_win_id)[0] - nvim_win_get_height(<sid>preview_win_id) / 2, 0])<cr>
+    nmap <c-d> <cmd>silent! call nvim_win_set_cursor(<sid>preview_win_id, [nvim_win_get_cursor(<sid>preview_win_id)[0] + nvim_win_get_height(<sid>preview_win_id) / 2, 0])<cr>
+
+    autocmd CursorMoved <buffer> ++once call extract#close_preview()
+endfunc
+
+func! extract#close_preview()
+    try
+        silent! unmap <c-u>
+        silent! unmap <c-d>
+
+        if s:preview_win_id != -1
+            execute win_id2win(s:preview_win_id).'wincmd c'
+            let s:preview_win_id = -1
+        endif
+    catch /.*/
+    endtry
+endfunc
+
 " Commands and mapping {{{
 " helpers
 com! -nargs=1 ExtractPut let s:visual = 0 | call extract#regPut(<q-args>[0], v:register)
@@ -480,6 +630,11 @@ inoremap <Plug>(extract-cycle) <esc>:ExtractCycle<cr>a
 nnoremap <Plug>(extract-replace-normal) :let g:extract_op_func_register=v:register \| set opfunc=<SID>replace<cr>g@
 vnoremap <Plug>(extract-replace-visual) :<c-u> let g:extract_op_func_register=v:register \| call <SID>replace(visualmode(), 1)<cr>
 
+" previews
+nnoremap <Plug>(extract-preview) :call extract#show_preview(0,0)<CR>
+nnoremap <Plug>(extract-sin-preview-inc) :call extract#show_preview(1,1)<CR>
+nnoremap <Plug>(extract-sin-preview-dec) :call extract#show_preview(1,-1)<CR>
+
 " Default mappings {{{
 let g:extract_normal_mappings = {
             \ 'p'         : '<Plug>(extract-put)',
@@ -488,7 +643,10 @@ let g:extract_normal_mappings = {
             \ '<leader>P' : ':ExtractUnPin<cr>A',
             \ 's '        : '<Plug>(extract-replace-normal)',
             \ 'S '        : '<Plug>(extract-replace-normal)$',
-            \ 'ss'        : 'V<Plug>(extract-replace-visual)'
+            \ 'ss'        : 'V<Plug>(extract-replace-visual)',
+            \ '<leader>o' : '<Plug>(extract-preview)',
+            \ '<down>'     : '<Plug>(extract-sin-preview-inc)',
+            \ '<up>'     : '<Plug>(extract-sin-preview-dec)'
             \ }
 
 let g:extract_global_mappings = {
