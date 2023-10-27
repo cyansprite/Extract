@@ -222,7 +222,7 @@ func! extract#put(indexBehaviour) "{{{
     endif
     try
         exe "norm! ". (s:visual ? "gv" : "") ."\"". g:extract_defaultRegister . s:currentCmd
-    catch E353
+    catch /^Vim\%((\a\+)\)\=:E353:/
         echohl ErrorMsg
         echom "reg empty"
         echohl None
